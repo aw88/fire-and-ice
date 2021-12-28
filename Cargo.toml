@@ -2,9 +2,9 @@
 name = "fire-and-ice"
 version = "0.1.0"
 authors = ["Alex Walton <alex.w.walton@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
+bevy = { git = "https://github.com/bevyengine/bevy", ref = "79d36e7c2831dfaab131ba1913dbfca4ab8e7245" }
