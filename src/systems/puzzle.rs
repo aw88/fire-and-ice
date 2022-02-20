@@ -13,6 +13,11 @@ impl Plugin for PuzzlePlugin {
 }
 
 #[derive(Component)]
+pub struct Fire {
+  position: IVec2,
+}
+
+#[derive(Component)]
 pub struct Ice {
   position: IVec2,
   width: u32,
@@ -107,7 +112,8 @@ fn setup_fire(
         ..Default::default()
       },
       ..Default::default()
-    });
+    })
+    .insert(Fire { position: fire_position.clone() });
   }
 }
 
