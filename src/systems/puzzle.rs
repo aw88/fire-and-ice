@@ -7,8 +7,15 @@ impl Plugin for PuzzlePlugin {
     app
       .insert_resource(PuzzleDefinition::new())
       .add_startup_system(setup_level)
-      .add_startup_system(setup_fire);
+      .add_startup_system(setup_fire)
+      .add_startup_system(setup_ice);
   }
+}
+
+#[derive(Component)]
+pub struct Ice {
+  position: IVec2,
+  width: u32,
 }
 
 pub struct PuzzleDefinition {
@@ -18,6 +25,8 @@ pub struct PuzzleDefinition {
   pub map_height: i32,
   fire_atlas_handle: Option<Handle<TextureAtlas>>,
   fire_positions: Vec<IVec2>,
+  ice_atlas_handle: Option<Handle<TextureAtlas>>,
+  ice_positions: Vec<(IVec2, u32)>,
 }
 
 impl PuzzleDefinition {
@@ -51,7 +60,13 @@ impl PuzzleDefinition {
         IVec2::new(7, 9),
         IVec2::new(7, 10),
         IVec2::new(9, 11),
-      ]
+      ],
+      ice_atlas_handle: None,
+      ice_positions: vec![
+        (IVec2::new(5, 8), 4),
+        (IVec2::new(5, 9), 3),
+        (IVec2::new(5, 10), 2),
+      ],
     }
   }
 
@@ -93,6 +108,98 @@ fn setup_fire(
       },
       ..Default::default()
     });
+  }
+}
+
+fn setup_ice(
+  mut commands: Commands,
+  asset_server: Res<AssetServer>,
+  mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+  mut puzzle: ResMut<PuzzleDefinition>,
+) {
+  if puzzle.ice_atlas_handle.is_none() {
+    let texture_handle = asset_server.load("ice.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(16.0), 6, 1);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+    puzzle.ice_atlas_handle = Some(texture_atlas_handle.clone());
+  }
+
+  let texture_atlas_handle = puzzle.ice_atlas_handle.as_ref().unwrap();
+
+  for (ice_position, ice_width) in &puzzle.ice_positions {
+    info!("Creating ice: {:?}", ice_position);
+    let position = Vec2::new(ice_position.x as f32, puzzle.map_height as f32 - ice_position.y as f32) * puzzle.tile_size;
+
+    commands
+      .spawn()
+      .insert(Ice { position: ice_position.clone(), width: *ice_width })
+      .insert(GlobalTransform::identity())
+      .insert(Transform::from_translation(position.extend(0.0)))
+      .with_children(|parent| {
+        match *ice_width {
+          1 => {
+            parent.spawn_bundle(SpriteSheetBundle {
+              texture_atlas: texture_atlas_handle.clone(),
+              sprite: TextureAtlasSprite {
+                index: 0,
+                ..Default::default()
+              },
+              ..Default::default()
+            });
+          },
+          2 => {
+            parent.spawn_bundle(SpriteSheetBundle {
+              texture_atlas: texture_atlas_handle.clone(),
+              sprite: TextureAtlasSprite {
+                index: 1,
+                ..Default::default()
+              },
+              ..Default::default()
+            });
+            parent.spawn_bundle(SpriteSheetBundle {
+              texture_atlas: texture_atlas_handle.clone(),
+              transform: Transform::from_xyz(puzzle.tile_size.x, 0.0, 0.0),
+              sprite: TextureAtlasSprite {
+                index: 3,
+                ..Default::default()
+              },
+              ..Default::default()
+            });
+          },
+          w => {
+            parent.spawn_bundle(SpriteSheetBundle {
+              texture_atlas: texture_atlas_handle.clone(),
+              sprite: TextureAtlasSprite {
+                index: 1,
+                ..Default::default()
+              },
+              ..Default::default()
+            });
+            for i in 1..(w-1) {
+              info!("{}", i);
+              parent.spawn_bundle(SpriteSheetBundle {
+                texture_atlas: texture_atlas_handle.clone(),
+                transform: Transform::from_xyz(puzzle.tile_size.x * i as f32, 0.0, 0.0),
+                sprite: TextureAtlasSprite {
+                  index: 2,
+                  ..Default::default()
+                },
+                ..Default::default()
+              });
+            }
+            parent.spawn_bundle(SpriteSheetBundle {
+              texture_atlas: texture_atlas_handle.clone(),
+              transform: Transform::from_xyz(puzzle.tile_size.x * (w as f32 - 1.0), 0.0, 0.0),
+              sprite: TextureAtlasSprite {
+                index: 3,
+                ..Default::default()
+              },
+              ..Default::default()
+            });
+          }
+        }
+      });
   }
 }
 
