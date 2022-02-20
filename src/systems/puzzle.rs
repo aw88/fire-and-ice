@@ -70,11 +70,15 @@ fn setup_fire(
   mut texture_atlases: ResMut<Assets<TextureAtlas>>,
   mut puzzle: ResMut<PuzzleDefinition>,
 ) {
-  let texture_handle = asset_server.load("fire0.png");
-  let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(16.0), 6, 1);
-  let texture_atlas_handle = texture_atlases.add(texture_atlas);
+  if puzzle.fire_atlas_handle.is_none() {
+    let texture_handle = asset_server.load("fire0.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(16.0), 6, 1);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-  puzzle.fire_atlas_handle = Some(texture_atlas_handle.clone());
+    puzzle.fire_atlas_handle = Some(texture_atlas_handle.clone());
+  }
+
+  let texture_atlas_handle = puzzle.fire_atlas_handle.as_ref().unwrap();
 
   for fire_position in &puzzle.fire_positions {
     info!("Creating fire: {:?}", fire_position);
