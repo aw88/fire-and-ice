@@ -17,7 +17,7 @@ pub struct PuzzleDefinition {
   pub map_width: i32,
   pub map_height: i32,
   fire_atlas_handle: Option<Handle<TextureAtlas>>,
-  fire_positions: Vec<Vec2>,
+  fire_positions: Vec<IVec2>,
 }
 
 impl PuzzleDefinition {
@@ -46,11 +46,11 @@ impl PuzzleDefinition {
       map_height: 16,
       fire_atlas_handle: None,
       fire_positions: vec![
-        Vec2::new(6.0, 5.0),
-        Vec2::new(7.0, 8.0),
-        Vec2::new(7.0, 9.0),
-        Vec2::new(7.0, 10.0),
-        Vec2::new(9.0, 11.0),
+        IVec2::new(6, 5),
+        IVec2::new(7, 8),
+        IVec2::new(7, 9),
+        IVec2::new(7, 10),
+        IVec2::new(9, 11),
       ]
     }
   }
@@ -82,7 +82,7 @@ fn setup_fire(
 
   for fire_position in &puzzle.fire_positions {
     info!("Creating fire: {:?}", fire_position);
-    let position = Vec2::new(fire_position.x, puzzle.map_height as f32 - fire_position.y) * puzzle.tile_size;
+    let position = Vec2::new(fire_position.x as f32, (puzzle.map_height - fire_position.y) as f32) * puzzle.tile_size;
 
     commands.spawn_bundle(SpriteSheetBundle {
       texture_atlas: texture_atlas_handle.clone(),
