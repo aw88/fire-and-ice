@@ -3,11 +3,13 @@ mod systems;
 use bevy::prelude::*;
 
 use crate::systems::puzzle::*;
+use crate::systems::player::*;
 
 fn main() {
   App::new()
     .add_plugins(DefaultPlugins)
     .add_plugin(PuzzlePlugin)
+    .add_plugin(PlayerPlugin)
     .add_system(bevy::input::system::exit_on_esc_system)
     .add_startup_system(setup_camera)
     .run();

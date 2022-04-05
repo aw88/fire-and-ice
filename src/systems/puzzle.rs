@@ -32,6 +32,7 @@ pub struct PuzzleDefinition {
   fire_positions: Vec<IVec2>,
   ice_atlas_handle: Option<Handle<TextureAtlas>>,
   ice_positions: Vec<(IVec2, u32)>,
+  pub player_start: IVec2,
 }
 
 impl PuzzleDefinition {
@@ -72,10 +73,11 @@ impl PuzzleDefinition {
         (IVec2::new(5, 9), 3),
         (IVec2::new(5, 10), 2),
       ],
+      player_start: IVec2::new(10, 10),
     }
   }
 
-  fn lookup_tile(&self, x: i32, y: i32) -> i32 {
+  pub fn lookup_tile(&self, x: i32, y: i32) -> i32 {
     if x >= 0 && x < self.map_width && y >= 0 && y < self.map_height {
       self.tiles[y as usize][x as usize]
     } else {
