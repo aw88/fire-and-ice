@@ -10,7 +10,7 @@ fn main() {
     .add_plugins(DefaultPlugins)
     .add_plugin(PuzzlePlugin)
     .add_plugin(PlayerPlugin)
-    .add_system(bevy::input::system::exit_on_esc_system)
+    .add_system(bevy::window::close_on_esc)
     .add_startup_system(setup_camera)
     .run();
 }
@@ -19,7 +19,7 @@ fn setup_camera(
   mut commands: Commands,
   puzzle_definition: Res<PuzzleDefinition>,
 ) {
-  let mut camera_bundle = OrthographicCameraBundle::new_2d();
+  let mut camera_bundle = Camera2dBundle::default();
 
   camera_bundle.transform.translation = Vec3::new(
     (puzzle_definition.map_width as f32 * 0.5 - 0.5) * puzzle_definition.tile_size.x,
@@ -29,5 +29,5 @@ fn setup_camera(
 
   camera_bundle.transform.scale = Vec3::new(1.0/2.0, 1.0/2.0, 1.0);
 
-  commands.spawn_bundle(camera_bundle);
+  commands.spawn(camera_bundle);
 }

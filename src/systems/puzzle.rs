@@ -12,6 +12,13 @@ impl Plugin for PuzzlePlugin {
   }
 }
 
+enum BlockType {
+  Empty,
+  Solid,
+  Fire,
+  Ice,
+}
+
 #[derive(Component)]
 pub struct Fire {
   position: IVec2,
@@ -23,6 +30,27 @@ pub struct Ice {
   width: u32,
 }
 
+pub struct PuzzleState {
+  tiles: Vec<Vec<i32>>,
+  map_size: IVec2,
+  fires: Vec<Fire>,
+  ice_blocks: Vec<Ice>,
+}
+
+impl PuzzleState {
+  fn lookup_tile(&self, x: i32, y: i32) -> BlockType {
+    if x >= 0 && x < self.map_size.x && y >= 0 && y < self.map_size.y {
+      match self.tiles[y as usize][x as usize] {
+        0 => BlockType::Empty,
+        _ => BlockType::Solid,
+      }
+    } else {
+      BlockType::Empty
+    }
+  }
+}
+
+#[derive(Resource)]
 pub struct PuzzleDefinition {
   tiles: Vec<Vec<i32>>,
   pub tile_size: Vec2,
@@ -94,7 +122,7 @@ fn setup_fire(
 ) {
   if puzzle.fire_atlas_handle.is_none() {
     let texture_handle = asset_server.load("fire0.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(16.0), 6, 1);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(16.0), 6, 1, None, None);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     puzzle.fire_atlas_handle = Some(texture_atlas_handle.clone());
@@ -106,7 +134,7 @@ fn setup_fire(
     info!("Creating fire: {:?}", fire_position);
     let position = Vec2::new(fire_position.x as f32, (puzzle.map_height - fire_position.y) as f32) * puzzle.tile_size;
 
-    commands.spawn_bundle(SpriteSheetBundle {
+    commands.spawn(SpriteSheetBundle {
       texture_atlas: texture_atlas_handle.clone(),
       transform: Transform::from_translation(position.extend(-0.1)),
       sprite: TextureAtlasSprite {
@@ -127,7 +155,7 @@ fn setup_ice(
 ) {
   if puzzle.ice_atlas_handle.is_none() {
     let texture_handle = asset_server.load("ice.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(16.0), 6, 1);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(16.0), 6, 1, None, None);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     puzzle.ice_atlas_handle = Some(texture_atlas_handle.clone());
@@ -136,18 +164,19 @@ fn setup_ice(
   let texture_atlas_handle = puzzle.ice_atlas_handle.as_ref().unwrap();
 
   for (ice_position, ice_width) in &puzzle.ice_positions {
-    info!("Creating ice: {:?}", ice_position);
+    info!("Creating ice: {:?}, ({:?})", ice_position, ice_width);
     let position = Vec2::new(ice_position.x as f32, puzzle.map_height as f32 - ice_position.y as f32) * puzzle.tile_size;
 
     commands
-      .spawn()
+      .spawn_empty()
       .insert(Ice { position: ice_position.clone(), width: *ice_width })
-      .insert(GlobalTransform::identity())
+      .insert(GlobalTransform::default())
+      .insert(VisibilityBundle::default())
       .insert(Transform::from_translation(position.extend(0.0)))
       .with_children(|parent| {
         match *ice_width {
           1 => {
-            parent.spawn_bundle(SpriteSheetBundle {
+            parent.spawn(SpriteSheetBundle {
               texture_atlas: texture_atlas_handle.clone(),
               sprite: TextureAtlasSprite {
                 index: 0,
@@ -157,7 +186,7 @@ fn setup_ice(
             });
           },
           2 => {
-            parent.spawn_bundle(SpriteSheetBundle {
+            parent.spawn(SpriteSheetBundle {
               texture_atlas: texture_atlas_handle.clone(),
               sprite: TextureAtlasSprite {
                 index: 1,
@@ -165,7 +194,7 @@ fn setup_ice(
               },
               ..Default::default()
             });
-            parent.spawn_bundle(SpriteSheetBundle {
+            parent.spawn(SpriteSheetBundle {
               texture_atlas: texture_atlas_handle.clone(),
               transform: Transform::from_xyz(puzzle.tile_size.x, 0.0, 0.0),
               sprite: TextureAtlasSprite {
@@ -176,7 +205,7 @@ fn setup_ice(
             });
           },
           w => {
-            parent.spawn_bundle(SpriteSheetBundle {
+            parent.spawn(SpriteSheetBundle {
               texture_atlas: texture_atlas_handle.clone(),
               sprite: TextureAtlasSprite {
                 index: 1,
@@ -186,7 +215,7 @@ fn setup_ice(
             });
             for i in 1..(w-1) {
               info!("{}", i);
-              parent.spawn_bundle(SpriteSheetBundle {
+              parent.spawn(SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle.clone(),
                 transform: Transform::from_xyz(puzzle.tile_size.x * i as f32, 0.0, 0.0),
                 sprite: TextureAtlasSprite {
@@ -196,7 +225,7 @@ fn setup_ice(
                 ..Default::default()
               });
             }
-            parent.spawn_bundle(SpriteSheetBundle {
+            parent.spawn(SpriteSheetBundle {
               texture_atlas: texture_atlas_handle.clone(),
               transform: Transform::from_xyz(puzzle.tile_size.x * (w as f32 - 1.0), 0.0, 0.0),
               sprite: TextureAtlasSprite {
@@ -218,7 +247,7 @@ fn setup_level(
   mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
   let texture_handle = asset_server.load("world0.png");
-  let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(16.0, 16.0), 8, 1);
+  let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(16.0, 16.0), 8, 1, None, None);
   let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
   for y in 0..puzzle.map_height {
@@ -235,7 +264,7 @@ fn setup_level(
           _ => 0,
       };
 
-      commands.spawn_bundle(SpriteSheetBundle {
+      commands.spawn(SpriteSheetBundle {
         texture_atlas: texture_atlas_handle.clone(),
         transform: Transform::from_xyz(x as f32 * puzzle.tile_size.x, (puzzle.map_height - y) as f32 * puzzle.tile_size.y, -0.2),
         sprite: TextureAtlasSprite {

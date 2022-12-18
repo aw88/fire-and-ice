@@ -63,7 +63,7 @@ fn player_startup(
   puzzle: ResMut<PuzzleDefinition>,
 ) {
   commands
-    .spawn_bundle(SpriteBundle {
+    .spawn(SpriteBundle {
       transform: Transform::from_xyz(puzzle.player_start.x as f32 * puzzle.tile_size.x, (puzzle.player_start.y as f32 + 1.25) * puzzle.tile_size.y, 0.0),
       ..Default::default()
     })
